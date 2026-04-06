@@ -1,68 +1,106 @@
-import { useState } from 'react';
-import { ModelSelector } from './components/ModelSelector';
-import { ImageInput } from './components/ImageInput';
-import { ChatOutput } from './components/ChatOutput';
+import { useEffect, useState } from 'react';
+import { DQMessageBox } from './components/DQMessageBox';
+import { OverlayControls } from './components/OverlayControls';
 import { useVlm } from './hooks/useVlm';
+import { useCamera } from './hooks/useCamera';
 
 export function App() {
-  const [prompt, setPrompt] = useState('この画像を説明してください');
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [prompt] = useState('Describe this image in detail.');
   const { status, modelId, setModelId, loadModel, runInference, result, progress, device } = useVlm();
+  const { videoRef, isActive, error: cameraError, start, capture } = useCamera();
 
-  const handleInference = () => {
-    if (selectedImage) {
-      void runInference(selectedImage, prompt);
-    }
+  // カメラ自動起動
+  useEffect(() => {
+    void start();
+  }, [start]);
+
+  const handleCapture = async () => {
+    const blob = await capture();
+    if (!blob) return;
+    const file = new File([blob], 'capture.jpg', { type: 'image/jpeg' });
+    void runInference(file, prompt);
   };
 
-  const isModelBusy = status === 'loading' || status === 'running';
-  const canInfer = (status === 'ready' || status === 'done') && selectedImage != null;
+  const showMessage = status === 'done' || status === 'error' || status === 'running' || status === 'loading';
+  const messageText =
+    status === 'loading' ? `モデルを読み込んでいます... ${Math.round(progress)}%` :
+    status === 'running' ? 'しばらくおまちください...' :
+    status === 'error' ? `エラーが発生しました:\n${result}` :
+    result || '';
 
   return (
-    <div style={{ maxWidth: 600, margin: '0 auto', padding: 16 }}>
-      <h1>LocalVLM</h1>
-      <p>ブラウザ上でVLMを動作させる検証環境</p>
-
-      <ModelSelector modelId={modelId} onChange={setModelId} disabled={isModelBusy} />
-
-      <button onClick={loadModel} disabled={isModelBusy}>
-        {status === 'loading' ? `モデル読み込み中... ${Math.round(progress)}%` : 'モデルを読み込む'}
-      </button>
-
-      {device && (
-        <span style={{ marginLeft: 8, fontSize: 12, color: device === 'webgpu' ? 'green' : 'orange' }}>
-          {device === 'webgpu' ? '⚡ WebGPU' : '🔄 WASM (フォールバック)'}
-        </span>
-      )}
-
-      <hr />
-
-      <div style={{ marginTop: 8 }}>
-        <label>
-          プロンプト:
-          <input
-            type="text"
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            style={{ width: '100%', marginTop: 4 }}
-          />
-        </label>
-      </div>
-
-      <ImageInput
-        onImageSelect={setSelectedImage}
-        disabled={status !== 'ready' && status !== 'done'}
+    <div style={{
+      position: 'fixed',
+      inset: 0,
+      background: '#000',
+      overflow: 'hidden',
+    }}>
+      {/* 全画面カメラプレビュー */}
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        muted
+        style={{
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+        }}
       />
 
-      <button
-        onClick={handleInference}
-        disabled={!canInfer || isModelBusy}
-        style={{ marginTop: 8 }}
-      >
-        推論実行
-      </button>
+      {/* カメラエラー表示 */}
+      {cameraError && !isActive && (
+        <div style={{
+          position: 'fixed',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          color: '#fff',
+          textAlign: 'center',
+          zIndex: 80,
+        }}>
+          <p style={{ fontSize: 18 }}>📷 {cameraError}</p>
+          <button
+            onClick={() => void start()}
+            style={{
+              marginTop: 12,
+              padding: '8px 24px',
+              background: '#3b82f6',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 8,
+              fontSize: 16,
+              cursor: 'pointer',
+            }}
+          >
+            再試行
+          </button>
+        </div>
+      )}
 
-      <ChatOutput status={status} result={result} />
+      {/* 上部コントロール + 撮影ボタン */}
+      <OverlayControls
+        status={status}
+        modelId={modelId}
+        device={device}
+        progress={progress}
+        onModelChange={setModelId}
+        onLoadModel={loadModel}
+        onCapture={() => void handleCapture()}
+      />
+
+      {/* ドラクエ風メッセージウィンドウ */}
+      <DQMessageBox text={messageText} visible={showMessage} />
+
+      {/* グローバルスタイル */}
+      <style>{`
+        @keyframes blink {
+          0%, 50% { opacity: 1; }
+          51%, 100% { opacity: 0; }
+        }
+        * { box-sizing: border-box; }
+        body { margin: 0; }
+      `}</style>
     </div>
   );
 }

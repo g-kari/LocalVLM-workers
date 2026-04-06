@@ -20,6 +20,14 @@
 - Pixel 8（8GB RAM）で動作確認済みのモデルのみ対象
 - WebGPU非対応時はフォールバックメッセージを表示する
 
+## テスト駆動開発（TDD）
+
+- **テストファーストで実装する**: 新機能・バグ修正は、まずテストを書いてから実装コードを書く
+- Red → Green → Refactor のサイクルを守る
+- E2EテストはPlaywrightを使用
+- コンポーネント変更時は対応するテストも更新する
+- `npm run test:e2e` でE2Eテストを実行
+
 ## Cloudflare Workers
 
 - Workers側のロジックは最小限に保つ（SPA配信 + API Proxy）
