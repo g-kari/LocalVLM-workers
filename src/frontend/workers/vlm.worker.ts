@@ -12,7 +12,8 @@ import type { VlmWorkerRequest, VlmWorkerResponse } from '../../types/vlm';
 interface CallableProcessor {
   apply_chat_template: (messages: unknown[], opts: Record<string, boolean>) => string;
   batch_decode: (tensor: Tensor, opts: Record<string, boolean>) => string[];
-  (text: string, images: RawImage[], opts: Record<string, boolean>): Promise<{ input_ids: Tensor }>;
+  // Gemma4Processorは (text, audio, images, opts) の順。audioはnullを渡す
+  (text: string, audio: null, images: RawImage[], opts: Record<string, boolean>): Promise<{ input_ids: Tensor }>;
 }
 
 let processor: CallableProcessor | null = null;
@@ -134,7 +135,7 @@ async function runInference(imageData: ArrayBuffer, prompt: string) {
       add_generation_prompt: true,
     });
 
-    const inputs = await processor(String(text), [image], {
+    const inputs = await processor(String(text), null, [image], {
       add_special_tokens: false,
     });
 
