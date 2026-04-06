@@ -51,7 +51,7 @@ export function OverlayControls({
         >
           {MODELS.map((m) => (
             <option key={m.id} value={m.id} style={{ background: '#222' }}>
-              {m.label}
+              {m.label} ({m.loadHint})
             </option>
           ))}
         </select>

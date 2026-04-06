@@ -19,7 +19,7 @@ export function ModelSelector({ modelId, onChange, disabled }: Props) {
         >
           {MODELS.map((m) => (
             <option key={m.id} value={m.id}>
-              {m.label}
+              {m.label} ({m.loadHint})
             </option>
           ))}
         </select>
