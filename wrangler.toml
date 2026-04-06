@@ -1,4 +1,4 @@
-name = "localvlm-workers"
+name = "local-vlm-workers"
 compatibility_date = "2025-04-01"
 
 # Cloudflare Workers で SPA配信 + API Proxy
