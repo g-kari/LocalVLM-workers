@@ -75,7 +75,7 @@ async function loadModel(modelId: string) {
     if (hasWebGPU) {
       try {
         model = await AutoModelForImageTextToText.from_pretrained(modelId, {
-          dtype: 'fp16',
+          dtype: 'q4f16',
           device: 'webgpu',
           progress_callback: makeProgressCallback(),
         });
@@ -85,10 +85,11 @@ async function loadModel(modelId: string) {
         return;
       } catch (e) {
         // Android Chrome WebGPUクラッシュ問題等 → WASMにフォールバック
-        // 部分ロード済みモデルを明示的に解放
+        // 部分ロード済みモデルを明示的に解放してGCを待つ
         model = null;
         post({ type: 'progress', progress: 0 });
         console.warn('WebGPU failed, falling back to WASM:', e);
+        await new Promise((resolve) => setTimeout(resolve, 500));
       }
     }
 
