@@ -162,6 +162,13 @@ async function runInference(imageData: ArrayBuffer, prompt: string) {
   }
 }
 
+self.addEventListener('unhandledrejection', (e: PromiseRejectionEvent) => {
+  e.preventDefault();
+  isLoading = false;
+  const msg = e.reason instanceof Error ? e.reason.message : String(e.reason);
+  post({ type: 'error', message: msg });
+});
+
 self.addEventListener('message', (e: MessageEvent<VlmWorkerRequest>) => {
   const msg = e.data;
   switch (msg.type) {

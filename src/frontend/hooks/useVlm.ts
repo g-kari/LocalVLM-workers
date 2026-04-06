@@ -29,13 +29,23 @@ async function resizeImage(file: File): Promise<Blob> {
   return canvas.convertToBlob({ type: 'image/jpeg', quality: 0.9 });
 }
 
+export interface DebugLog {
+  ts: number;
+  msg: string;
+}
+
 export function useVlm() {
   const [status, setStatus] = useState<VlmStatus>('idle');
   const [modelId, setModelId] = useState<string>(DEFAULT_MODEL_ID);
   const [result, setResult] = useState('');
   const [progress, setProgress] = useState(0);
   const [device, setDevice] = useState<'webgpu' | 'wasm' | null>(null);
+  const [logs, setLogs] = useState<DebugLog[]>([]);
   const workerRef = useRef<Worker | null>(null);
+
+  const addLog = useCallback((msg: string) => {
+    setLogs((prev) => [...prev.slice(-199), { ts: Date.now(), msg }]);
+  }, []);
 
   const getWorker = useCallback(() => {
     if (!workerRef.current) {
@@ -53,20 +63,23 @@ export function useVlm() {
             setStatus('ready');
             setProgress(100);
             setDevice(msg.device);
+            addLog(`ready device=${msg.device}`);
             break;
           case 'result':
             setStatus('done');
             setResult(msg.text);
+            addLog(`result length=${msg.text.length}`);
             break;
           case 'error':
             setStatus('error');
             setResult(msg.message);
+            addLog(`error: ${msg.message}`);
             break;
         }
       });
     }
     return workerRef.current;
-  }, []);
+  }, [addLog]);
 
   // Worker cleanup
   useEffect(() => {
@@ -80,8 +93,9 @@ export function useVlm() {
     setStatus('loading');
     setProgress(0);
     setDevice(null);
+    addLog(`load model=${modelId}`);
     getWorker().postMessage({ type: 'load', modelId });
-  }, [getWorker, modelId]);
+  }, [getWorker, modelId, addLog]);
 
   const runInference = useCallback(
     async (imageFile: File, prompt: string) => {
@@ -97,5 +111,5 @@ export function useVlm() {
     [getWorker]
   );
 
-  return { status, modelId, setModelId, loadModel, runInference, result, progress, device };
+  return { status, modelId, setModelId, loadModel, runInference, result, progress, device, logs };
 }

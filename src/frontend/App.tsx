@@ -1,5 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { DQMessageBox } from './components/DQMessageBox';
+import { DebugDrawer } from './components/DebugDrawer';
 import { OverlayControls } from './components/OverlayControls';
 import { useVlm } from './hooks/useVlm';
 import { useCamera } from './hooks/useCamera';
@@ -7,8 +8,9 @@ import { useCamera } from './hooks/useCamera';
 const PROMPT = 'Describe this image in detail.';
 
 export function App() {
-  const { status, modelId, setModelId, loadModel, runInference, result, progress, device } = useVlm();
+  const { status, modelId, setModelId, loadModel, runInference, result, progress, device, logs } = useVlm();
   const { videoRef, isActive, error: cameraError, start, capture } = useCamera();
+  const [debugOpen, setDebugOpen] = useState(false);
 
   // カメラ自動起動
   useEffect(() => {
@@ -93,6 +95,30 @@ export function App() {
 
       {/* ドラクエ風メッセージウィンドウ */}
       <DQMessageBox text={messageText} visible={showMessage} progress={status === 'loading' ? progress : undefined} />
+
+      {/* デバッグボタン */}
+      <button
+        onClick={() => setDebugOpen(true)}
+        style={{
+          position: 'fixed', bottom: 16, right: 16, zIndex: 150,
+          background: 'rgba(0,0,0,0.6)', color: '#5599ff',
+          border: '1px solid rgba(85,153,255,0.4)',
+          borderRadius: 8, padding: '6px 10px',
+          fontFamily: 'monospace', fontSize: 12, cursor: 'pointer',
+        }}
+      >
+        DBG
+      </button>
+
+      <DebugDrawer
+        open={debugOpen}
+        onClose={() => setDebugOpen(false)}
+        status={status}
+        modelId={modelId}
+        device={device}
+        progress={progress}
+        logs={logs}
+      />
 
       {/* グローバルスタイル */}
       <style>{`
