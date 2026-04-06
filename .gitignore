@@ -4,6 +4,10 @@ dist/
 .dev.vars
 *.local
 
+# Playwright
+test-results/
+playwright-report/
+
 # OS
 .DS_Store
 Thumbs.db
