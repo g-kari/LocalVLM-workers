@@ -1,5 +1,7 @@
 name = "localvlm-workers"
 compatibility_date = "2025-04-01"
+workers_dev = true
+preview_urls = false
 
 # Cloudflare Workers で SPA配信 + API Proxy
 # デプロイはGitHub接続による自動デプロイ
