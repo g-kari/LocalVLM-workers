@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.wrangler/
+.dev.vars
+*.local
+
+# OS
+.DS_Store
+Thumbs.db
