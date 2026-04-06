@@ -5,7 +5,11 @@ import { OverlayControls } from './components/OverlayControls';
 import { useVlm } from './hooks/useVlm';
 import { useCamera } from './hooks/useCamera';
 
-const PROMPT = 'Describe this image in detail.';
+const PROMPT =
+  'Describe what you see in this image in the style of a Dragon Quest "Book of Adventure" (冒険のしょ) save file entry. ' +
+  'Use simple Japanese with lots of hiragana, short punchy sentences, and a dramatic RPG narrator tone. ' +
+  'Example style: "そこには おおきな まちが あった。たくさんの ひとびとが にぎやかに くらしている。ゆうしゃは しずかに まちを みわたした。" ' +
+  'Keep it under 60 Japanese characters.';
 
 export function App() {
   const { status, modelId, setModelId, loadModel, runInference, result, progress, device, logs } = useVlm();
