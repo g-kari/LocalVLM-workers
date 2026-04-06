@@ -1,6 +1,6 @@
 import {
   AutoProcessor,
-  AutoModelForImageTextToText,
+  Gemma4ForConditionalGeneration,
   RawImage,
   Tensor,
   type PreTrainedModel,
@@ -74,7 +74,7 @@ async function loadModel(modelId: string) {
 
     if (hasWebGPU) {
       try {
-        model = await AutoModelForImageTextToText.from_pretrained(modelId, {
+        model = await Gemma4ForConditionalGeneration.from_pretrained(modelId, {
           dtype: 'q4f16',
           device: 'webgpu',
           progress_callback: makeProgressCallback(),
@@ -94,7 +94,7 @@ async function loadModel(modelId: string) {
     }
 
     // WASMフォールバック
-    model = await AutoModelForImageTextToText.from_pretrained(modelId, {
+    model = await Gemma4ForConditionalGeneration.from_pretrained(modelId, {
       dtype: 'q4',
       device: 'wasm',
       progress_callback: makeProgressCallback(),

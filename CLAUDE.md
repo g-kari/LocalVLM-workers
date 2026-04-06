@@ -134,3 +134,11 @@ Cloudflare Dashboardでの設定：
 - Pixel 8（8GB RAM）で動作するモデルサイズに制限
 - transformers.jsのWeb Workerで推論を実行し、UIスレッドをブロックしない
 - モデルの初回ロードはキャッシュ後に高速化（Cache API / OPFS）
+
+## URL取得方法
+
+外部URLのコンテンツを取得する際は、`https://r.jina.ai/<URL>` を経由してMarkdown形式で取得すること。
+
+```
+例: https://r.jina.ai/https://note.com/npaka/n/n8d399c1b60f0
+```
