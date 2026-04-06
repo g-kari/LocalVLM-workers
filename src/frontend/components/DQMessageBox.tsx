@@ -16,6 +16,7 @@ function useTypewriter(text: string, speed: number): { displayed: string; isTypi
           return { displayed: '', index: 0, source: text };
         }
         if (prev.index >= text.length) {
+          clearInterval(timer);
           return prev;
         }
         const nextIndex = prev.index + 1;

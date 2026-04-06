@@ -35,6 +35,30 @@ async function checkWebGPU(): Promise<boolean> {
   }
 }
 
+function makeProgressCallback(): ProgressCallback {
+  const fileBytes = new Map<string, { loaded: number; total: number }>();
+
+  return (p) => {
+    if (!('progress' in p) || typeof p.progress !== 'number') return;
+    const file = ('file' in p && typeof p.file === 'string') ? p.file : null;
+    const loaded = ('loaded' in p && typeof p.loaded === 'number') ? p.loaded : 0;
+    const total = ('total' in p && typeof p.total === 'number') ? p.total : 0;
+
+    if (file && total > 0) {
+      fileBytes.set(file, { loaded, total });
+      let sumLoaded = 0;
+      let sumTotal = 0;
+      for (const { loaded: l, total: t } of fileBytes.values()) {
+        sumLoaded += l;
+        sumTotal += t;
+      }
+      post({ type: 'progress', progress: (sumLoaded / sumTotal) * 100 });
+    } else {
+      post({ type: 'progress', progress: p.progress });
+    }
+  };
+}
+
 async function loadModel(modelId: string) {
   if (isLoading) return;
   isLoading = true;
@@ -46,12 +70,6 @@ async function loadModel(modelId: string) {
   try {
     processor = await AutoProcessor.from_pretrained(modelId) as unknown as CallableProcessor;
 
-    const progressCallback: ProgressCallback = (p) => {
-      if ('progress' in p && typeof p.progress === 'number') {
-        post({ type: 'progress', progress: p.progress });
-      }
-    };
-
     const hasWebGPU = await checkWebGPU();
 
     if (hasWebGPU) {
@@ -59,7 +77,7 @@ async function loadModel(modelId: string) {
         model = await AutoModelForImageTextToText.from_pretrained(modelId, {
           dtype: 'fp16',
           device: 'webgpu',
-          progress_callback: progressCallback,
+          progress_callback: makeProgressCallback(),
         });
         currentDevice = 'webgpu';
         isLoading = false;
@@ -78,7 +96,7 @@ async function loadModel(modelId: string) {
     model = await AutoModelForImageTextToText.from_pretrained(modelId, {
       dtype: 'q4',
       device: 'wasm',
-      progress_callback: progressCallback,
+      progress_callback: makeProgressCallback(),
     });
     currentDevice = 'wasm';
     isLoading = false;

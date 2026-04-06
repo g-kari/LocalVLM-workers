@@ -24,7 +24,7 @@ export function App() {
 
   const showMessage = status === 'done' || status === 'error' || status === 'running' || status === 'loading';
   const messageText =
-    status === 'loading' ? 'モデルを読み込んでいます...' :
+    status === 'loading' ? (progress >= 100 ? 'モデルを初期化しています...' : 'モデルを読み込んでいます...') :
     status === 'running' ? 'しばらくおまちください...' :
     status === 'error' ? `エラーが発生しました:\n${result}` :
     result || '';
