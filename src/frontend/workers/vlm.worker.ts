@@ -3,13 +3,19 @@ import {
   AutoModelForImageTextToText,
   RawImage,
   Tensor,
-  type Processor,
   type PreTrainedModel,
   type ProgressCallback,
 } from '@huggingface/transformers';
 import type { VlmWorkerRequest, VlmWorkerResponse } from '../../types/vlm';
 
-let processor: Processor | null = null;
+/** transformers.jsのprocessorはPythonの__call__相当のcallableを持つが型定義では表現されていない */
+interface CallableProcessor {
+  apply_chat_template: (messages: unknown[], opts: Record<string, boolean>) => string;
+  batch_decode: (tensor: Tensor, opts: Record<string, boolean>) => string[];
+  (text: string, images: RawImage[], opts: Record<string, boolean>): Promise<{ input_ids: Tensor }>;
+}
+
+let processor: CallableProcessor | null = null;
 let model: PreTrainedModel | null = null;
 let currentDevice: 'webgpu' | 'wasm' = 'wasm';
 let isLoading = false;
@@ -38,7 +44,7 @@ async function loadModel(modelId: string) {
   model = null;
 
   try {
-    processor = await AutoProcessor.from_pretrained(modelId);
+    processor = await AutoProcessor.from_pretrained(modelId) as unknown as CallableProcessor;
 
     const progressCallback: ProgressCallback = (p) => {
       if ('progress' in p && typeof p.progress === 'number') {
@@ -105,20 +111,11 @@ async function runInference(imageData: ArrayBuffer, prompt: string) {
       },
     ];
 
-    // transformers.jsのprocessorはPythonの__call__相当のcallableを持つ
-    // TypeScript型定義では表現されていないためキャストが必要
-    // apply_chat_templateも同様にランタイムでのみ利用可能
-    const processorCallable = processor as unknown as {
-      apply_chat_template: (messages: unknown[], opts: Record<string, boolean>) => string;
-      batch_decode: (tensor: Tensor, opts: Record<string, boolean>) => string[];
-      (text: string, images: RawImage[], opts: Record<string, boolean>): Promise<{ input_ids: Tensor }>;
-    };
-
-    const text = processorCallable.apply_chat_template(messages, {
+    const text = processor.apply_chat_template(messages, {
       add_generation_prompt: true,
     });
 
-    const inputs = await processorCallable(String(text), [image], {
+    const inputs = await processor(String(text), [image], {
       add_special_tokens: false,
     });
 
@@ -136,7 +133,7 @@ async function runInference(imageData: ArrayBuffer, prompt: string) {
 
     // 入力トークン部分をスキップして生成部分のみをデコード
     const inputLength = inputs.input_ids.dims[1] ?? 0;
-    const decoded = processorCallable.batch_decode(
+    const decoded = processor.batch_decode(
       outputTensor.slice(null, [inputLength, null] as unknown as [number, number]),
       { skip_special_tokens: true },
     );

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 export function useCamera() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const canvasRef = useRef<OffscreenCanvas | null>(null);
   const [isActive, setIsActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,11 +28,17 @@ export function useCamera() {
     const video = videoRef.current;
     if (!video || !isActive) return null;
 
-    const canvas = new OffscreenCanvas(video.videoWidth, video.videoHeight);
-    const ctx = canvas.getContext('2d');
+    const w = video.videoWidth;
+    const h = video.videoHeight;
+
+    if (!canvasRef.current || canvasRef.current.width !== w || canvasRef.current.height !== h) {
+      canvasRef.current = new OffscreenCanvas(w, h);
+    }
+
+    const ctx = canvasRef.current.getContext('2d');
     if (!ctx) return null;
     ctx.drawImage(video, 0, 0);
-    return canvas.convertToBlob({ type: 'image/jpeg', quality: 0.85 });
+    return canvasRef.current.convertToBlob({ type: 'image/jpeg', quality: 0.85 });
   }, [isActive]);
 
   useEffect(() => {

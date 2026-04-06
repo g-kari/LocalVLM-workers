@@ -1,12 +1,5 @@
 import type { VlmStatus } from '../hooks/useVlm';
-
-const MODELS = [
-  { id: 'onnx-community/gemma-4-E2B-it-ONNX', label: 'Gemma 4 E2B' },
-  { id: 'HuggingFaceTB/SmolVLM-256M-Instruct', label: 'SmolVLM-256M' },
-  { id: 'HuggingFaceTB/SmolVLM-500M-Instruct', label: 'SmolVLM-500M' },
-  { id: 'HuggingFaceTB/SmolVLM2-256M-Video-Instruct', label: 'SmolVLM2-256M' },
-  { id: 'HuggingFaceTB/SmolVLM2-500M-Video-Instruct', label: 'SmolVLM2-500M' },
-] as const;
+import { MODELS } from '../constants/models';
 
 interface Props {
   status: VlmStatus;
@@ -24,6 +17,7 @@ export function OverlayControls({
   onModelChange, onLoadModel, onCapture,
 }: Props) {
   const isModelBusy = status === 'loading' || status === 'running';
+  const isReady = status === 'ready' || status === 'done';
 
   return (
     <>
@@ -66,7 +60,7 @@ export function OverlayControls({
           onClick={onLoadModel}
           disabled={isModelBusy}
           style={{
-            background: status === 'ready' || status === 'done' ? '#22c55e' : '#3b82f6',
+            background: isReady ? '#22c55e' : '#3b82f6',
             color: '#fff',
             border: 'none',
             borderRadius: 6,
@@ -78,7 +72,7 @@ export function OverlayControls({
           }}
         >
           {status === 'loading' ? `${Math.round(progress)}%` :
-            status === 'ready' || status === 'done' ? '✓ Ready' : 'Load'}
+            isReady ? '✓ Ready' : 'Load'}
         </button>
 
         {device && (
@@ -95,7 +89,7 @@ export function OverlayControls({
       {/* 撮影ボタン（中央下） */}
       <button
         onClick={onCapture}
-        disabled={isModelBusy || (status !== 'ready' && status !== 'done')}
+        disabled={isModelBusy || !isReady}
         style={{
           position: 'fixed',
           bottom: showMessage ? 'calc(40vh + 48px)' : 200,
@@ -111,8 +105,8 @@ export function OverlayControls({
             : 'rgba(255,255,255,0.9)',
           border: '4px solid #fff',
           boxShadow: '0 2px 12px rgba(0,0,0,0.3)',
-          cursor: (status === 'ready' || status === 'done') ? 'pointer' : 'not-allowed',
-          opacity: (status === 'ready' || status === 'done') ? 1 : 0.4,
+          cursor: isReady ? 'pointer' : 'not-allowed',
+          opacity: isReady ? 1 : 0.4,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { VlmWorkerResponse } from '../../types/vlm';
+import { DEFAULT_MODEL_ID } from '../constants/models';
 
 export type VlmStatus = 'idle' | 'loading' | 'ready' | 'running' | 'done' | 'error';
 
@@ -30,7 +31,7 @@ async function resizeImage(file: File): Promise<Blob> {
 
 export function useVlm() {
   const [status, setStatus] = useState<VlmStatus>('idle');
-  const [modelId, setModelId] = useState('onnx-community/gemma-4-E2B-it-ONNX');
+  const [modelId, setModelId] = useState<string>(DEFAULT_MODEL_ID);
   const [result, setResult] = useState('');
   const [progress, setProgress] = useState(0);
   const [device, setDevice] = useState<'webgpu' | 'wasm' | null>(null);

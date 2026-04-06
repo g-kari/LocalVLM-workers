@@ -1,10 +1,4 @@
-const MODELS = [
-  { id: 'onnx-community/gemma-4-E2B-it-ONNX', label: 'Gemma 4 E2B (2.3B) ⭐' },
-  { id: 'HuggingFaceTB/SmolVLM-256M-Instruct', label: 'SmolVLM-256M (256M)' },
-  { id: 'HuggingFaceTB/SmolVLM-500M-Instruct', label: 'SmolVLM-500M (500M)' },
-  { id: 'HuggingFaceTB/SmolVLM2-256M-Video-Instruct', label: 'SmolVLM2-256M Video (256M)' },
-  { id: 'HuggingFaceTB/SmolVLM2-500M-Video-Instruct', label: 'SmolVLM2-500M Video (500M)' },
-] as const;
+import { MODELS } from '../constants/models';
 
 interface Props {
   modelId: string;

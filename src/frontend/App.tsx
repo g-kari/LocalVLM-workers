@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { DQMessageBox } from './components/DQMessageBox';
 import { OverlayControls } from './components/OverlayControls';
 import { useVlm } from './hooks/useVlm';
 import { useCamera } from './hooks/useCamera';
 
+const PROMPT = 'Describe this image in detail.';
+
 export function App() {
-  const [prompt] = useState('Describe this image in detail.');
   const { status, modelId, setModelId, loadModel, runInference, result, progress, device } = useVlm();
   const { videoRef, isActive, error: cameraError, start, capture } = useCamera();
 
@@ -18,12 +19,12 @@ export function App() {
     const blob = await capture();
     if (!blob) return;
     const file = new File([blob], 'capture.jpg', { type: 'image/jpeg' });
-    void runInference(file, prompt);
+    void runInference(file, PROMPT);
   };
 
   const showMessage = status === 'done' || status === 'error' || status === 'running' || status === 'loading';
   const messageText =
-    status === 'loading' ? `モデルを読み込んでいます... ${Math.round(progress)}%` :
+    status === 'loading' ? 'モデルを読み込んでいます...' :
     status === 'running' ? 'しばらくおまちください...' :
     status === 'error' ? `エラーが発生しました:\n${result}` :
     result || '';
@@ -91,7 +92,7 @@ export function App() {
       />
 
       {/* ドラクエ風メッセージウィンドウ */}
-      <DQMessageBox text={messageText} visible={showMessage} />
+      <DQMessageBox text={messageText} visible={showMessage} progress={status === 'loading' ? progress : undefined} />
 
       {/* グローバルスタイル */}
       <style>{`

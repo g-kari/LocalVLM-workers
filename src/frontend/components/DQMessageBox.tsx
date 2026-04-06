@@ -3,25 +3,21 @@ import { useEffect, useState } from 'react';
 interface Props {
   text: string;
   visible: boolean;
+  progress?: number;
 }
 
 function useTypewriter(text: string, speed: number): { displayed: string; isTyping: boolean } {
   const [state, setState] = useState({ displayed: '', index: 0, source: text });
 
-  // text変更をstateで追跡し、intervalで1文字ずつ進める
   useEffect(() => {
     const timer = setInterval(() => {
       setState((prev) => {
-        // テキストが変わったらリセット
         if (prev.source !== text) {
           return { displayed: '', index: 0, source: text };
         }
-        // タイピング完了
         if (prev.index >= text.length) {
-          clearInterval(timer);
           return prev;
         }
-        // 1文字追加
         const nextIndex = prev.index + 1;
         return {
           displayed: text.slice(0, nextIndex),
@@ -40,10 +36,12 @@ function useTypewriter(text: string, speed: number): { displayed: string; isTypi
 }
 
 /** ドラクエ風メッセージウィンドウ（1文字ずつ表示） */
-export function DQMessageBox({ text, visible }: Props) {
+export function DQMessageBox({ text, visible, progress }: Props) {
   const { displayed, isTyping } = useTypewriter(text, 30);
 
   if (!visible) return null;
+
+  const showProgress = progress != null && progress < 100;
 
   return (
     <div style={{
@@ -78,7 +76,34 @@ export function DQMessageBox({ text, visible }: Props) {
         {displayed}
         {isTyping && <span style={{ opacity: 0.7 }}>▋</span>}
       </p>
-      {!isTyping && text.length > 0 && (
+      {showProgress && (
+        <div style={{ marginTop: 12 }}>
+          <div style={{
+            height: 6,
+            background: 'rgba(255,255,255,0.15)',
+            borderRadius: 3,
+            overflow: 'hidden',
+          }}>
+            <div style={{
+              height: '100%',
+              width: `${Math.round(progress)}%`,
+              background: '#5599ff',
+              borderRadius: 3,
+              transition: 'width 0.3s ease',
+            }} />
+          </div>
+          <span style={{
+            color: '#5599ff',
+            fontSize: 12,
+            marginTop: 4,
+            display: 'block',
+            textAlign: 'right',
+          }}>
+            {Math.round(progress)}%
+          </span>
+        </div>
+      )}
+      {!isTyping && !showProgress && text.length > 0 && (
         <div style={{ textAlign: 'right', marginTop: 8 }}>
           <span style={{
             color: '#5599ff',
