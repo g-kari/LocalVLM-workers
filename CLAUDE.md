@@ -137,8 +137,5 @@ Cloudflare Dashboardでの設定：
 
 ## URL取得方法
 
-外部URLのコンテンツを取得する際は、`https://r.jina.ai/<URL>` を経由してMarkdown形式で取得すること。
-
-```
-例: https://r.jina.ai/https://note.com/npaka/n/n8d399c1b60f0
-```
+外部URLのコンテンツを取得する際は、`cloudflare-markdown` MCPツールを使用してMarkdown形式で取得すること。
+WebFetchではなくMCPツールを優先すること。
