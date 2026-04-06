@@ -3,6 +3,7 @@ compatibility_date = "2025-04-01"
 
 # Cloudflare Pages Functions で SPA配信 + API Proxy
 # デプロイはGitHub接続による自動デプロイ
+# カスタムドメイン: LocalVLM-workers.0g0.xyz
 
 [vars]
 # 環境変数（シークレットはCloudflare Dashboardで設定）

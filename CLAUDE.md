@@ -106,10 +106,13 @@ GitHub接続によるCloudflare自動デプロイを使用。
 
 **GitHub Actionsは使用しない。**
 
+カスタムドメイン: `LocalVLM-workers.0g0.xyz`
+
 Cloudflare Dashboardでの設定：
 - ビルドコマンド: `npm run build`
 - ビルド出力ディレクトリ: `dist`
 - Node.jsバージョン: 20
+- カスタムドメイン: `LocalVLM-workers.0g0.xyz`（Cloudflare DNS → Pages）
 
 ## アーキテクチャ
 
