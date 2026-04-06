@@ -100,6 +100,17 @@ export function App() {
       {/* ドラクエ風メッセージウィンドウ */}
       <DQMessageBox text={messageText} visible={showMessage} progress={status === 'loading' ? progress : undefined} />
 
+      {/* ライセンス帰属表示 */}
+      <div style={{
+        position: 'fixed', bottom: 16, left: 16, zIndex: 100,
+        color: 'rgba(255,255,255,0.35)', fontSize: 10,
+        fontFamily: 'monospace', pointerEvents: 'none',
+        lineHeight: 1.4,
+      }}>
+        Powered by Gemma 4 E2B<br />
+        © Google DeepMind (Gemma Terms of Use)
+      </div>
+
       {/* デバッグボタン */}
       <button
         onClick={() => setDebugOpen(true)}
