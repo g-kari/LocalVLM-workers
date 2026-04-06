@@ -9,9 +9,10 @@ const MODELS = [
 interface Props {
   modelId: string;
   onChange: (id: string) => void;
+  disabled?: boolean;
 }
 
-export function ModelSelector({ modelId, onChange }: Props) {
+export function ModelSelector({ modelId, onChange, disabled }: Props) {
   return (
     <div style={{ marginBottom: 8 }}>
       <label>
@@ -19,6 +20,7 @@ export function ModelSelector({ modelId, onChange }: Props) {
         <select
           value={modelId}
           onChange={(e) => onChange(e.target.value)}
+          disabled={disabled}
           style={{ marginLeft: 8 }}
         >
           {MODELS.map((m) => (

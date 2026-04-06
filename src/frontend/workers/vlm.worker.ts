@@ -12,6 +12,7 @@ import type { VlmWorkerRequest, VlmWorkerResponse } from '../../types/vlm';
 let processor: Processor | null = null;
 let model: PreTrainedModel | null = null;
 let currentDevice: 'webgpu' | 'wasm' = 'wasm';
+let isLoading = false;
 
 function post(msg: VlmWorkerResponse) {
   self.postMessage(msg);
@@ -29,6 +30,13 @@ async function checkWebGPU(): Promise<boolean> {
 }
 
 async function loadModel(modelId: string) {
+  if (isLoading) return;
+  isLoading = true;
+
+  // エラーリカバリ: 前回の壊れた状態をリセット
+  processor = null;
+  model = null;
+
   try {
     processor = await AutoProcessor.from_pretrained(modelId);
 
@@ -38,7 +46,6 @@ async function loadModel(modelId: string) {
       }
     };
 
-    // WebGPUで試行、失敗したらWASMにフォールバック
     const hasWebGPU = await checkWebGPU();
 
     if (hasWebGPU) {
@@ -49,10 +56,13 @@ async function loadModel(modelId: string) {
           progress_callback: progressCallback,
         });
         currentDevice = 'webgpu';
+        isLoading = false;
         post({ type: 'ready', device: 'webgpu' });
         return;
       } catch (e) {
-        // WebGPUで失敗（Android Chromeクラッシュ問題等）→ WASMにフォールバック
+        // Android Chrome WebGPUクラッシュ問題等 → WASMにフォールバック
+        // 部分ロード済みモデルを明示的に解放
+        model = null;
         post({ type: 'progress', progress: 0 });
         console.warn('WebGPU failed, falling back to WASM:', e);
       }
@@ -65,8 +75,12 @@ async function loadModel(modelId: string) {
       progress_callback: progressCallback,
     });
     currentDevice = 'wasm';
+    isLoading = false;
     post({ type: 'ready', device: 'wasm' });
   } catch (e) {
+    processor = null;
+    model = null;
+    isLoading = false;
     post({ type: 'error', message: e instanceof Error ? e.message : String(e) });
   }
 }
@@ -91,28 +105,41 @@ async function runInference(imageData: ArrayBuffer, prompt: string) {
       },
     ];
 
-    // @ts-expect-error processor.apply_chat_template exists at runtime
-    const text = processor.apply_chat_template(messages, {
+    // transformers.jsのprocessorはPythonの__call__相当のcallableを持つ
+    // TypeScript型定義では表現されていないためキャストが必要
+    // apply_chat_templateも同様にランタイムでのみ利用可能
+    const processorCallable = processor as unknown as {
+      apply_chat_template: (messages: unknown[], opts: Record<string, boolean>) => string;
+      batch_decode: (tensor: Tensor, opts: Record<string, boolean>) => string[];
+      (text: string, images: RawImage[], opts: Record<string, boolean>): Promise<{ input_ids: Tensor }>;
+    };
+
+    const text = processorCallable.apply_chat_template(messages, {
       add_generation_prompt: true,
     });
 
-    const inputs = await (processor as unknown as (text: string, images: RawImage[], opts: Record<string, boolean>) => Promise<{ input_ids: Tensor }>)(
-      String(text), [image], { add_special_tokens: false }
-    );
+    const inputs = await processorCallable(String(text), [image], {
+      add_special_tokens: false,
+    });
 
     const maxTokens = currentDevice === 'wasm' ? 128 : 256;
+
+    // model.generateの戻り値はTensorまたは{ sequences: Tensor }
     const output = await (model.generate as unknown as (params: Record<string, unknown>) => Promise<Tensor>)({
       ...inputs,
       max_new_tokens: maxTokens,
     });
 
-    const outputTensor = output instanceof Tensor ? output : (output as unknown as { sequences: Tensor }).sequences;
+    const outputTensor = output instanceof Tensor
+      ? output
+      : (output as unknown as { sequences: Tensor }).sequences;
+
+    // 入力トークン部分をスキップして生成部分のみをデコード
     const inputLength = inputs.input_ids.dims[1] ?? 0;
-    const decoded = (processor as unknown as { batch_decode: (t: Tensor, opts: Record<string, boolean>) => string[] })
-      .batch_decode(
-        outputTensor.slice(null, [inputLength, null] as unknown as [number, number]),
-        { skip_special_tokens: true }
-      );
+    const decoded = processorCallable.batch_decode(
+      outputTensor.slice(null, [inputLength, null] as unknown as [number, number]),
+      { skip_special_tokens: true },
+    );
 
     post({ type: 'result', text: decoded[0] ?? '' });
   } catch (e) {

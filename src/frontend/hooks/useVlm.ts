@@ -1,7 +1,32 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { VlmWorkerResponse } from '../../types/vlm';
 
 export type VlmStatus = 'idle' | 'loading' | 'ready' | 'running' | 'done' | 'error';
+
+const MAX_IMAGE_SIZE = 512;
+
+/** 画像をcanvasでリサイズしてBlobに変換（Pixel 8の12.2MPカメラ対策） */
+async function resizeImage(file: File): Promise<Blob> {
+  const bitmap = await createImageBitmap(file);
+  const { width, height } = bitmap;
+
+  if (width <= MAX_IMAGE_SIZE && height <= MAX_IMAGE_SIZE) {
+    bitmap.close();
+    return file;
+  }
+
+  const scale = MAX_IMAGE_SIZE / Math.max(width, height);
+  const w = Math.round(width * scale);
+  const h = Math.round(height * scale);
+
+  const canvas = new OffscreenCanvas(w, h);
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Canvas 2D context not available');
+  ctx.drawImage(bitmap, 0, 0, w, h);
+  bitmap.close();
+
+  return canvas.convertToBlob({ type: 'image/jpeg', quality: 0.9 });
+}
 
 export function useVlm() {
   const [status, setStatus] = useState<VlmStatus>('idle');
@@ -42,8 +67,15 @@ export function useVlm() {
     return workerRef.current;
   }, []);
 
+  // Worker cleanup
+  useEffect(() => {
+    return () => {
+      workerRef.current?.terminate();
+      workerRef.current = null;
+    };
+  }, []);
+
   const loadModel = useCallback(() => {
-    // WebGPU非対応でもWASMフォールバックがあるので、チェックなしでWorkerに任せる
     setStatus('loading');
     setProgress(0);
     setDevice(null);
@@ -54,7 +86,8 @@ export function useVlm() {
     async (imageFile: File, prompt: string) => {
       setStatus('running');
       setResult('');
-      const buffer = await imageFile.arrayBuffer();
+      const resized = await resizeImage(imageFile);
+      const buffer = await resized.arrayBuffer();
       getWorker().postMessage(
         { type: 'infer', imageData: buffer, prompt },
         [buffer]

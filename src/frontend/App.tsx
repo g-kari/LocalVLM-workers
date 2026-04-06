@@ -6,19 +6,26 @@ import { useVlm } from './hooks/useVlm';
 
 export function App() {
   const [prompt, setPrompt] = useState('この画像を説明してください');
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const { status, modelId, setModelId, loadModel, runInference, result, progress, device } = useVlm();
+
+  const handleInference = () => {
+    if (selectedImage) {
+      void runInference(selectedImage, prompt);
+    }
+  };
+
+  const isModelBusy = status === 'loading' || status === 'running';
+  const canInfer = (status === 'ready' || status === 'done') && selectedImage != null;
 
   return (
     <div style={{ maxWidth: 600, margin: '0 auto', padding: 16 }}>
       <h1>LocalVLM</h1>
       <p>ブラウザ上でVLMを動作させる検証環境</p>
 
-      <ModelSelector modelId={modelId} onChange={setModelId} />
+      <ModelSelector modelId={modelId} onChange={setModelId} disabled={isModelBusy} />
 
-      <button
-        onClick={loadModel}
-        disabled={status === 'loading' || status === 'running'}
-      >
+      <button onClick={loadModel} disabled={isModelBusy}>
         {status === 'loading' ? `モデル読み込み中... ${Math.round(progress)}%` : 'モデルを読み込む'}
       </button>
 
@@ -29,13 +36,6 @@ export function App() {
       )}
 
       <hr />
-
-      <ImageInput
-        onImageSelect={(image) => {
-          runInference(image, prompt);
-        }}
-        disabled={status !== 'ready' && status !== 'done'}
-      />
 
       <div style={{ marginTop: 8 }}>
         <label>
@@ -48,6 +48,19 @@ export function App() {
           />
         </label>
       </div>
+
+      <ImageInput
+        onImageSelect={setSelectedImage}
+        disabled={status !== 'ready' && status !== 'done'}
+      />
+
+      <button
+        onClick={handleInference}
+        disabled={!canInfer || isModelBusy}
+        style={{ marginTop: 8 }}
+      >
+        推論実行
+      </button>
 
       <ChatOutput status={status} result={result} />
     </div>

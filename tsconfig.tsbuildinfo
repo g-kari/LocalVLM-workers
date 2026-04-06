@@ -1,0 +1,1 @@
+{"root":["./src/frontend/App.tsx","./src/frontend/main.tsx","./src/frontend/vite-env.d.ts","./src/frontend/webgpu.d.ts","./src/frontend/components/ChatOutput.tsx","./src/frontend/components/ImageInput.tsx","./src/frontend/components/ModelSelector.tsx","./src/frontend/hooks/useVlm.ts","./src/frontend/workers/vlm.worker.ts","./src/types/vlm.ts"],"version":"6.0.2"}
