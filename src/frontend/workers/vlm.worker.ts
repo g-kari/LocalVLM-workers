@@ -12,8 +12,8 @@ import type { VlmWorkerRequest, VlmWorkerResponse } from '../../types/vlm';
 interface CallableProcessor {
   apply_chat_template: (messages: unknown[], opts: Record<string, boolean>) => string;
   batch_decode: (tensor: Tensor, opts: Record<string, boolean>) => string[];
-  // Gemma4Processorは (text, audio, images, opts) の順。audioはnullを渡す
-  (text: string, audio: null, images: RawImage[], opts: Record<string, boolean>): Promise<{ input_ids: Tensor }>;
+  // Gemma4Processorは (text, images, audio, opts) の順。audioはnullを渡す
+  (text: string, images: RawImage[], audio: null, opts: Record<string, boolean>): Promise<{ input_ids: Tensor }>;
 }
 
 let processor: CallableProcessor | null = null;
@@ -23,6 +23,10 @@ let isLoading = false;
 
 function post(msg: VlmWorkerResponse) {
   self.postMessage(msg);
+}
+
+function toErrorMessage(e: unknown): string {
+  return toErrorMessage(e);
 }
 
 async function checkWebGPU(): Promise<boolean> {
@@ -107,7 +111,7 @@ async function loadModel(modelId: string) {
     processor = null;
     model = null;
     isLoading = false;
-    post({ type: 'error', message: e instanceof Error ? e.message : String(e) });
+    post({ type: 'error', message: toErrorMessage(e) });
   }
 }
 
@@ -135,7 +139,7 @@ async function runInference(imageData: ArrayBuffer, prompt: string) {
       add_generation_prompt: true,
     });
 
-    const inputs = await processor(String(text), null, [image], {
+    const inputs = await processor(text, [image], null, {
       add_special_tokens: false,
     });
 
@@ -160,15 +164,14 @@ async function runInference(imageData: ArrayBuffer, prompt: string) {
 
     post({ type: 'result', text: decoded[0] ?? '' });
   } catch (e) {
-    post({ type: 'error', message: e instanceof Error ? e.message : String(e) });
+    post({ type: 'error', message: toErrorMessage(e) });
   }
 }
 
 self.addEventListener('unhandledrejection', (e: PromiseRejectionEvent) => {
   e.preventDefault();
   isLoading = false;
-  const msg = e.reason instanceof Error ? e.reason.message : String(e.reason);
-  post({ type: 'error', message: msg });
+  post({ type: 'error', message: toErrorMessage(e.reason) });
 });
 
 self.addEventListener('message', (e: MessageEvent<VlmWorkerRequest>) => {
