@@ -1,6 +1,6 @@
 import {
   AutoProcessor,
-  AutoModelForVision2Seq,
+  AutoModelForImageTextToText,
   RawImage,
   Tensor,
   type Processor,
@@ -50,7 +50,7 @@ async function loadModel(modelId: string) {
 
     if (hasWebGPU) {
       try {
-        model = await AutoModelForVision2Seq.from_pretrained(modelId, {
+        model = await AutoModelForImageTextToText.from_pretrained(modelId, {
           dtype: 'fp16',
           device: 'webgpu',
           progress_callback: progressCallback,
@@ -69,7 +69,7 @@ async function loadModel(modelId: string) {
     }
 
     // WASMフォールバック
-    model = await AutoModelForVision2Seq.from_pretrained(modelId, {
+    model = await AutoModelForImageTextToText.from_pretrained(modelId, {
       dtype: 'q4',
       device: 'wasm',
       progress_callback: progressCallback,

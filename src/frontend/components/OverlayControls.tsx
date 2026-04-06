@@ -13,13 +13,14 @@ interface Props {
   modelId: string;
   device: 'webgpu' | 'wasm' | null;
   progress: number;
+  showMessage: boolean;
   onModelChange: (id: string) => void;
   onLoadModel: () => void;
   onCapture: () => void;
 }
 
 export function OverlayControls({
-  status, modelId, device, progress,
+  status, modelId, device, progress, showMessage,
   onModelChange, onLoadModel, onCapture,
 }: Props) {
   const isModelBusy = status === 'loading' || status === 'running';
@@ -97,7 +98,8 @@ export function OverlayControls({
         disabled={isModelBusy || (status !== 'ready' && status !== 'done')}
         style={{
           position: 'fixed',
-          bottom: 200,
+          bottom: showMessage ? 'calc(40vh + 48px)' : 200,
+          transition: 'bottom 0.3s ease',
           left: '50%',
           transform: 'translateX(-50%)',
           zIndex: 90,

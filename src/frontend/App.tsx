@@ -84,6 +84,7 @@ export function App() {
         modelId={modelId}
         device={device}
         progress={progress}
+        showMessage={showMessage}
         onModelChange={setModelId}
         onLoadModel={loadModel}
         onCapture={() => void handleCapture()}
