@@ -28,8 +28,8 @@ This software uses the following third-party components:
 
 1. Gemma 4 E2B (onnx-community/gemma-4-E2B-it-ONNX)
    Copyright (c) Google DeepMind
-   Licensed under the Gemma Terms of Use:
-   https://ai.google.dev/gemma/terms
+   Licensed under the Apache License, Version 2.0
+   https://ai.google.dev/gemma/docs/gemma_4_license
    Original model: google/gemma-4-E2B-it
 
 2. Transformers.js (@huggingface/transformers)

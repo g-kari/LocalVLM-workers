@@ -107,8 +107,8 @@ export function App() {
         fontFamily: 'monospace', pointerEvents: 'none',
         lineHeight: 1.4,
       }}>
-        Powered by Gemma 4 E2B<br />
-        © Google DeepMind (Gemma Terms of Use)
+        Powered by Gemma 4 E2B (Apache 2.0)<br />
+        © Google DeepMind
       </div>
 
       {/* デバッグボタン */}
