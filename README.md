@@ -1,5 +1,8 @@
 # LocalVLM-workers
 
+これ見てwebでも動くんかなと試し
+https://x.com/i/status/2041109577790631975
+
 ブラウザ上でVLM（Vision Language Model）を動作・検証するためのWebアプリケーション。
 Cloudflare Workers経由でSPA配信し、WebGPU + transformers.jsでクライアントサイド推論を実行する。
 
