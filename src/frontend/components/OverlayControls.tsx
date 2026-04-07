@@ -4,7 +4,7 @@ import { MODELS } from '../constants/models';
 interface Props {
   status: VlmStatus;
   modelId: string;
-  device: 'webgpu' | 'wasm' | null;
+  device: 'webnn' | 'webgpu' | 'wasm' | null;
   progress: number;
   showMessage: boolean;
   onModelChange: (id: string) => void;

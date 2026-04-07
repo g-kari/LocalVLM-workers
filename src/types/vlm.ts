@@ -18,7 +18,7 @@ export interface VlmProgressResponse {
 
 export interface VlmReadyResponse {
   type: 'ready';
-  device: 'webgpu' | 'wasm';
+  device: 'webnn' | 'webgpu' | 'wasm';
 }
 
 export interface VlmResultResponse {

@@ -18,7 +18,7 @@ interface CallableProcessor {
 
 let processor: CallableProcessor | null = null;
 let model: PreTrainedModel | null = null;
-let currentDevice: 'webgpu' | 'wasm' = 'wasm';
+let currentDevice: 'webnn' | 'webgpu' | 'wasm' = 'wasm';
 let isLoading = false;
 
 function post(msg: VlmWorkerResponse) {
@@ -27,6 +27,17 @@ function post(msg: VlmWorkerResponse) {
 
 function toErrorMessage(e: unknown): string {
   return toErrorMessage(e);
+}
+
+async function checkWebNN(): Promise<boolean> {
+  try {
+    if (!('ml' in self.navigator)) return false;
+    const ml = (self.navigator as unknown as { ml: { createContext: (opts: unknown) => Promise<unknown | null> } }).ml;
+    const context = await ml.createContext({ deviceType: 'npu' });
+    return context != null;
+  } catch {
+    return false;
+  }
 }
 
 async function checkWebGPU(): Promise<boolean> {
@@ -75,7 +86,27 @@ async function loadModel(modelId: string) {
   try {
     processor = await AutoProcessor.from_pretrained(modelId) as unknown as CallableProcessor;
 
-    const hasWebGPU = await checkWebGPU();
+    const [hasWebNN, hasWebGPU] = await Promise.all([checkWebNN(), checkWebGPU()]);
+
+    // NPU (WebNN) → WebGPU → WASM の順で試行
+    if (hasWebNN) {
+      try {
+        model = await Gemma4ForConditionalGeneration.from_pretrained(modelId, {
+          dtype: 'q4',
+          device: 'webnn',
+          progress_callback: makeProgressCallback(),
+        });
+        currentDevice = 'webnn';
+        isLoading = false;
+        post({ type: 'ready', device: 'webnn' });
+        return;
+      } catch (e) {
+        model = null;
+        post({ type: 'progress', progress: 0 });
+        console.warn('WebNN failed, falling back to WebGPU:', e);
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
+    }
 
     if (hasWebGPU) {
       try {

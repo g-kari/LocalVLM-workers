@@ -39,7 +39,7 @@ export function useVlm() {
   const [modelId, setModelId] = useState<string>(DEFAULT_MODEL_ID);
   const [result, setResult] = useState('');
   const [progress, setProgress] = useState(0);
-  const [device, setDevice] = useState<'webgpu' | 'wasm' | null>(null);
+  const [device, setDevice] = useState<'webnn' | 'webgpu' | 'wasm' | null>(null);
   const [logs, setLogs] = useState<DebugLog[]>([]);
   const workerRef = useRef<Worker | null>(null);
 

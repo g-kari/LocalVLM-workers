@@ -1,13 +1,37 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { DebugLog } from '../hooks/useVlm';
 import type { VlmStatus } from '../hooks/useVlm';
+
+interface EnvInfo {
+  userAgent: string;
+  webnn: 'supported' | 'unsupported' | 'checking';
+  webgpu: 'supported' | 'unsupported' | 'checking';
+}
+
+async function detectEnv(): Promise<EnvInfo> {
+  const nav = navigator as unknown as {
+    gpu?: { requestAdapter: () => Promise<unknown | null> };
+    ml?: { createContext: (o: unknown) => Promise<unknown | null> };
+  };
+
+  const [webgpuOk, webnnOk] = await Promise.all([
+    nav.gpu ? nav.gpu.requestAdapter().then(a => a != null).catch(() => false) : Promise.resolve(false),
+    nav.ml ? nav.ml.createContext({ deviceType: 'npu' }).then(c => c != null).catch(() => false) : Promise.resolve(false),
+  ]);
+
+  return {
+    userAgent: navigator.userAgent,
+    webnn: webnnOk ? 'supported' : 'unsupported',
+    webgpu: webgpuOk ? 'supported' : 'unsupported',
+  };
+}
 
 interface Props {
   open: boolean;
   onClose: () => void;
   status: VlmStatus;
   modelId: string;
-  device: 'webgpu' | 'wasm' | null;
+  device: 'webnn' | 'webgpu' | 'wasm' | null;
   progress: number;
   logs: DebugLog[];
 }
@@ -19,6 +43,11 @@ function fmt(ts: number): string {
 
 export function DebugDrawer({ open, onClose, status, modelId, device, progress, logs }: Props) {
   const logEndRef = useRef<HTMLDivElement>(null);
+  const [env, setEnv] = useState<EnvInfo>({ userAgent: '', webnn: 'checking', webgpu: 'checking' });
+
+  useEffect(() => {
+    void detectEnv().then(setEnv);
+  }, []);
 
   useEffect(() => {
     if (open) logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -88,6 +117,37 @@ export function DebugDrawer({ open, onClose, status, modelId, device, progress, 
               <span style={{ color: '#e0e0e0' }}>{v}</span>
             </div>
           ))}
+        </div>
+
+        {/* 端末・ブラウザ対応状況 */}
+        <div style={{
+          padding: '8px 16px',
+          borderBottom: '1px solid rgba(255,255,255,0.1)',
+          flexShrink: 0,
+        }}>
+          <div style={{ color: '#666', fontFamily: 'monospace', fontSize: 11, marginBottom: 4 }}>ENV</div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
+            {([
+              ['WebNN (NPU)', env.webnn],
+              ['WebGPU', env.webgpu],
+            ] as [string, string][]).map(([label, s]) => (
+              <span key={label} style={{
+                fontFamily: 'monospace', fontSize: 11,
+                padding: '2px 6px', borderRadius: 4,
+                background: s === 'supported' ? 'rgba(0,200,100,0.15)' : s === 'checking' ? 'rgba(255,200,0,0.1)' : 'rgba(255,60,60,0.1)',
+                color: s === 'supported' ? '#4caf7d' : s === 'checking' ? '#b8a020' : '#e05555',
+                border: `1px solid ${s === 'supported' ? '#2d6b47' : s === 'checking' ? '#6b5a10' : '#6b2525'}`,
+              }}>
+                {label}: {s}
+              </span>
+            ))}
+          </div>
+          <div style={{
+            fontFamily: 'monospace', fontSize: 10, color: '#555',
+            wordBreak: 'break-all', lineHeight: 1.4,
+          }}>
+            {env.userAgent || '—'}
+          </div>
         </div>
 
         {/* ログ */}
