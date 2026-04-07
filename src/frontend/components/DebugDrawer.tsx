@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import type { DebugLog } from '../hooks/useVlm';
 import type { VlmStatus } from '../hooks/useVlm';
 
@@ -44,9 +44,17 @@ function fmt(ts: number): string {
 export function DebugDrawer({ open, onClose, status, modelId, device, progress, logs }: Props) {
   const logEndRef = useRef<HTMLDivElement>(null);
   const [env, setEnv] = useState<EnvInfo>({ userAgent: '', webnn: 'checking', webgpu: 'checking' });
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     void detectEnv().then(setEnv);
+  }, []);
+
+  const copyFlag = useCallback(() => {
+    void navigator.clipboard.writeText('chrome://flags/#enable-webnn').then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
   }, []);
 
   useEffect(() => {
@@ -142,6 +150,25 @@ export function DebugDrawer({ open, onClose, status, modelId, device, progress, 
               </span>
             ))}
           </div>
+          {env.webnn === 'unsupported' && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+              <span style={{ fontFamily: 'monospace', fontSize: 10, color: '#666' }}>
+                chrome://flags/#enable-webnn
+              </span>
+              <button
+                onClick={copyFlag}
+                style={{
+                  background: copied ? 'rgba(0,200,100,0.15)' : 'rgba(85,153,255,0.15)',
+                  border: `1px solid ${copied ? '#2d6b47' : 'rgba(85,153,255,0.4)'}`,
+                  borderRadius: 4, color: copied ? '#4caf7d' : '#5599ff',
+                  fontFamily: 'monospace', fontSize: 10,
+                  padding: '2px 6px', cursor: 'pointer',
+                }}
+              >
+                {copied ? 'copied!' : 'copy'}
+              </button>
+            </div>
+          )}
           <div style={{
             fontFamily: 'monospace', fontSize: 10, color: '#555',
             wordBreak: 'break-all', lineHeight: 1.4,
