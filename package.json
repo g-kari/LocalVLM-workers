@@ -21,7 +21,7 @@
   "dependencies": {
     "@huggingface/transformers": "^4.0.1",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.2.5"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250327.0",
